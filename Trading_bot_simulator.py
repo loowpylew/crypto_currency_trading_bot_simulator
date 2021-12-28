@@ -7,7 +7,8 @@ import calendar # Used to call specific functions to prepare calendar for data f
 
 
 # Price threshold (percentage)
-PRICE_THRESHOLD = 0.0000002
+# Use of 7 decimal places. This is because percentage difference between current open price and previous closing price tends to change within this range
+PRICE_THRESHOLD = 0.0000002 
 # Stop loss (percentage)
 STOP_LOSS = 0.0000005
 
@@ -182,8 +183,8 @@ def analyze(pair, since, loop_cycle):
                         # prepare the trade request
 
                         # sell 
-
                         # sell(pair, close_, last_trade)
+
                         close_ = float(data[len(data) - 1][4])
 
 
@@ -405,22 +406,10 @@ if __name__ == '__main__':
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    # Tests that were conducted: 
+    # Comprised of testing result of various methods by outputing inot string format using json.dumps()
+    # keyerro: 'result' 
+
     # since = str(int(time.time() - 86,400)) # This is a timestamp of 86400 seconds which equates to a day. 
     #print(json.dumps(get_crypto_data(pair[0]+pair[1], since), indent=4)) # json.dumps will convert the python object into a string. The indent parameter is used to to indent each line by 4 spaces, this makes the data that we accumulate tidy and easier to read.
     #print(get_balance())
@@ -440,69 +429,10 @@ if __name__ == '__main__':
         print(f"'{key}' does not exist")"""
     
         
-        #https://support.kraken.com/hc/en-us/articles/206548367-What-is-the-API-call-rate-limit-
+    #https://support.kraken.com/hc/en-us/articles/206548367-What-is-the-API-call-rate-limit-
 
-        #https://support.kraken.com/hc/en-us/articles/360045239571-Trading-rate-limits
+    #https://support.kraken.com/hc/en-us/articles/360045239571-Trading-rate-limits
 
-        #First rate limit will be reached when loop hits 9th gathering of trades history: 2(counter increase)*9(iteration)-0.33(Counter decrease per second)*(No.of seconds you are willing to wait to reduce counter)
-    """count = 0
-    loop_cycle = 0
-    while True: 
-        data = get_crypto_data(pair[0]+pair[1], since)
-        time.sleep(1)
-        for prices in data: 
-            open_ = float(prices[1])
-            high_ = float(prices[2])
-            low_ = float(prices[3])
-            close_ = float(prices[4])
-
-            #print(f"Count[{count}]", prices)
-
-            count += 1
-
+    #First rate limit will be reached when loop hits 9th gathering of trades history: 2(counter increase)*9(iteration)-0.33(Counter decrease per second)*(No.of seconds you are willing to wait to reduce counter)
+    
         
-            
-            
-            60 different data points. 
-            while loop occurs 9 times thus 60 data points * 9 = 540 new prices every time we loop though data 
-
-            
-            
- 
-
-            print(f"Closing price[{count}]: ", close_, " ", pair[1])
-            print(f"\nMoving average: ", calcMovingAverage(data), " ", pair[1])
-            #print(percentage_Increase)   
-            
-            percentage_Increase = (float(close_[4])[59] - float(close_[4])[58]) / float((close_[4])[58] * 100)
-
-            percentage_Decrease = (float(close_[4])[58] - float(close_[4])[59]) / float((close_[4])[58] * 100)
-
-            print(percentage_Increase)
-            print(percentage_Decrease)
-
-            
-
-
-        loop_cycle += 1 
-
-        if count == (60 * loop_cycle) and count <= 540: 
-                print(f"{loop_cycle} set: ")
-                
-                percentage_Increase = ((float(data[59][4]) - float(data[58][4])) / float(data[58][4]) * 100)
-
-                percentage_Decrease = ((float(data[58][4]) - float(data[59][4])) / float(data[58][4]) * 100)
-                
-                print("Percentage Increase: " , percentage_Increase)
-                print("Percentage Decrease: ", percentage_Decrease)
-            
-            
-        time.sleep(1)
-        if loop_cycle == 9: 
-            loop_cycle = 0 
-            count = 0
-            print("\nRegenerating rate limit points for starter account: \n")
-            countdown(46)  # This is placed here once we exceed our rate limit of 15 points due to API Endpoint requests i.e. TradesHistory(+2), Balance(+1)
-                           # Each second passed gives a reduction of -0.33 points thus (1 request per second * 9 seconds) - (0.33 * 9) = no. of points accumulated on account. 
-                           # Divide the remaining no. of points by 0.33 to get no.of seconds you have to wait to set rate limit back to 0. 
-        """
