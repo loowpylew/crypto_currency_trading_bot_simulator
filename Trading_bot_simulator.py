@@ -7,9 +7,9 @@ import calendar # Used to call specific functions to prepare calendar for data f
 
 
 # Price threshold (percentage)
-PRICE_THRESHOLD = 0.0007
+PRICE_THRESHOLD = 0.0000002
 # Stop loss (percentage)
-STOP_LOSS = 0.0005
+STOP_LOSS = 0.0000005
 
 def get_crypto_data(pair, since): 
     # Making a call to the API 
@@ -34,49 +34,45 @@ def calcMovingAverage(data):
         total_sum += close_
         count += 1
 
-    common_average = round((total_sum / count), 3)
+    common_average = round((total_sum / count), 5)
     return common_average
 
-def analyze(pair, since, count, loop_cycle): 
+def printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair): 
+    print("Current open price: ", open_)
+    print("Current closing price: ", close_)
+    print("Moving average: ", moving_Average)
+    print("If negative, means a decrease; if postive, means an increase in the price since the last sale")
+    print(f'Percentage Difference is: {str(percentage_Increase)}% since last analysis, trying again...')
+    # print(f'Difference is only: {str(percentage_Decrease)}% decrease trying again...')
+    print("Available", pair[0], ": ", available_crypto)
+    print("Available", pair[1], ": ", available_money)
+
+def analyze(pair, since, loop_cycle): 
     data = get_crypto_data(pair[0]+pair[1], since)
-    
-    for prices in data: 
-        balance = get_fake_balance() 
-        #balance = get_balance() uncomment when you want to trade with real money 
-        last_trade = get_last_trade(pair[0]+pair[1])
 
-        count += 1
+    balance = get_fake_balance() 
+    #balance = get_balance() uncomment when you want to trade with real money 
+    last_trade = get_last_trade(pair[0]+pair[1])
 
-        print(count)
-
-        if count == 60:
-            close_ = round(float(prices[4]), 3)
-        if count == 60: 
-            open_ = round(float(prices[1]), 3)
-        #print(f"index[{count}]: ", close_)
-            
-        
-        #high_ = float(prices[2])
-        #low_ = float(prices[3])
-        #close_ = float(prices[4])
-        
-    available_crypto = float(balance['XXRP'])
+    available_crypto = float(balance['ANT'])
     available_money = float(balance['USD.HOLD'])
-            
 
     if available_crypto == 0 and available_money == 0: 
         print("Do not have enough funds to make a trade") 
-       
-    if count == 60: 
-        if loop_cycle == 1: 
-            print(f"\nAnalyzing ... {loop_cycle}st data set: \n")
-        elif loop_cycle == 2: 
-            print(f"\nAnalyzing ... {loop_cycle}nd data set: \n")
-        elif loop_cycle == 3: 
-            print(f"\nAnalyzing ... {loop_cycle}rd data set: \n")
-        else:
-            print(f"\nAnalyzing ... {loop_cycle}th data set: \n")
-            
+
+    if loop_cycle == 1: 
+        print(f"\nAnalyzing ... {loop_cycle}st data set: \n")
+    elif loop_cycle == 2: 
+        print(f"\nAnalyzing ... {loop_cycle}nd data set: \n")
+    elif loop_cycle == 3: 
+        print(f"\nAnalyzing ... {loop_cycle}rd data set: \n")
+    else:
+        print(f"\nAnalyzing ... {loop_cycle}th data set: \n")
+
+    open_ = float(data[len(data) - 1][1])
+    close_ = float(data[len(data) - 2][4])
+
+
     # Calculate the % difference between the current price and the close price of the previous candle
     # If the price increased, use the formula [(New Price - Old Price)/Old Price] and then multiply that number by 100.
     percentage_Increase = (open_ - close_) / (close_ * 100)
@@ -86,47 +82,43 @@ def analyze(pair, since, count, loop_cycle):
 
     moving_Average = calcMovingAverage(data)
 
-            
-    #did_sell = False # Might have to remove
+    # open_ represents 100%, so price threshold must be split into the relevant number of parts to gain a relative percentage value in relation to the open price
+    percentage_threshold_equivilant = (PRICE_THRESHOLD / open_) * 100
+    percentage_stop_loss_equivilant = (STOP_LOSS / open_) * 100
 
-            
-    available_crypto = float(balance['XXRP'])
+    #did_sell = False # Might have to remove
+    
+    available_crypto = float(balance['ANT'])
     available_money = float(balance['USD.HOLD'])
-            
+    
     if available_money != 0 or available_crypto != 0: 
         # If the moving average is greater than current bid price, we can expect an upwards shift in the value of the share
         if moving_Average > open_:
-            if percentage_Increase > PRICE_THRESHOLD :
+            if percentage_Increase > percentage_threshold_equivilant:
                 if available_money != 0: 
                     print(f'Percentage increase (1st indication): {pair[0]+pair[1]}, {percentage_Increase}%')
-                    # Pause for 8 seconds to ensure the increase is sustained. Isnt just a random fluctuation. But instead, an upward trend
+                    # Pause for 3 seconds to ensure the increase is sustained. Isnt just a random fluctuation. But instead, an upward trend
                     time.sleep(3)
                             
-                    # calculate the difference once again. We do this to ensure the upward trend remains after the 8 second period
+                    # calculate the difference once again. We do this to ensure the upward trend remains after the 3 second period
                     data = get_crypto_data(pair[0]+pair[1], since)
-
-                    count = 0
-
-                    for prices in data: 
-                        balance = get_fake_balance() 
-                        #balance = get_balance() uncomment when you want to trade with real money 
-                        last_trade = get_last_trade(pair[0]+pair[1])
-                        count += 1
-                        if count == 60:
-                            close_ = float(prices[4])
-                        if count == 60: 
-                            open_ = float(prices[1])
-
+                    
+                    open_ = float(data[len(data) - 1][1])
+                    close_ = float(data[len(data) - 2][4])
+                    
                     percentage_Increase = (open_ - close_) / (close_ * 100)
 
                     moving_Average = calcMovingAverage(data)
                     
-                    if percentage_Increase > PRICE_THRESHOLD:
+                    percentage_threshold_equivilant = (PRICE_THRESHOLD / open_) * 100
+                    
+                    if percentage_Increase > percentage_threshold_equivilant:
                         print(f'Percentage Increase (2nd Indication): {pair[0]+pair[1]}, {percentage_Increase}%')
                         print(f'{pair[0]+pair[1]} is up {str(percentage_Increase)}% increase in the last minute opening BUY position.')
                         # Buy
                         # buy(pair[0]+pair[1], available_money, close_, last_trade)
 
+                        close_ = float(data[len(data) - 1][4])
 
                         fake_buy(pair, available_money, close_, last_trade)
                             
@@ -134,11 +126,12 @@ def analyze(pair, since, count, loop_cycle):
                         print(f'Difference is only: {str(percentage_Increase)}% increase trying again...')
                         pass
                 else: 
+                    printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
                     pass
                     
                 # If there is a sudden decrease in value of the share, if it is equal to or falls over our stop loss then we 'sell' quickly. 
-            elif percentage_Decrease >= STOP_LOSS:
-                available_crypto = float(balance['XXRP'])
+            elif percentage_Decrease >= percentage_stop_loss_equivilant:
+                available_crypto = float(balance['ANT'])
                 available_money = float(balance['USD.HOLD'])
 
                 if available_crypto != 0:
@@ -147,125 +140,114 @@ def analyze(pair, since, count, loop_cycle):
                     # prepare the trade request
                     # sell 
                     # sell(pair, close_, last_trade)
+                    
+                    close_ = float(data[len(data) - 1][4])
 
                     fake_sell(pair, available_crypto, close_, last_trade)
                 else: 
-                    pass
+                    printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
             else: 
-                print("Current open price: ", open_)
-                print("Current closing price: ", close_)
-                print("Moving average: ", moving_Average)
-                print("If negative, means a decrease; if postive, means an increase in the price since the last sale")
-                print(f'Difference is only: {str(percentage_Increase)}% Increase trying again...')
-                print(f'Difference is only: {str(percentage_Decrease)}% decrease trying again...')
+                printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
                 pass 
                 
         # If the moving average is less than the current buy price, then we can expect a downward trend to emerge hence we want to sell whilst the share is still high in value    
         elif moving_Average < open_:
-             available_crypto = float(balance['XXRP'])
-             available_money = float(balance['USD.HOLD'])
-             if percentage_Decrease >= STOP_LOSS :
-                 if available_crypto != 0: 
-                     print(f'Percentage Decrease (1st indication) : {pair[0]+pair[1]}, {percentage_Decrease}%')
-                     time.sleep(4) # Pause for 4 seconds to ensure the decrease is sustained. Isnt just a random fluctuation. But instead, the begining of a downward trend
-                                   # We have more leverage in respects to the amount of time we can wait when the trend is going upwards as we will only be gaining profit
-                                   # Whereas the longer we leave time to ensure a downward trend, the more we will lose if the trend is in fact going down. 
-                                   # The risk associated with this is that if we do sell, and it was only a temporary fluctuation in the price, we would'nt have lost money, 
-                                   # but we would have lost a chance to increase our profit. 
-                    
-                     # calculate the difference once again. We do this to ensure the downward trend remains after the 4 second period
-                     data = get_crypto_data(pair[0]+pair[1], since)
-
-                     count = 0
-
-                     for prices in data: 
-                         balance = get_fake_balance() 
-                         #balance = get_balance() uncomment when you want to trade with real money 
-                         last_trade = get_last_trade(pair[0]+pair[1])
-                         count += 1
-                         if count == 60:
-                             close_ = float(prices[4])
-                         if count == 60: 
-                             open_ = float(prices[1])
-
-                     
-                     percentage_Decrease = (close_ - open_) / (close_ * 100)
-
-                     moving_Average = calcMovingAverage(data)
-
-                     if percentage_Decrease >= STOP_LOSS:
-                         print(f'Percentage Decrease (2nd Indication): {pair[0]+pair[1]}, {percentage_Decrease}%')
-                         print(f'{pair[0]+pair[1]} is up {str(percentage_Decrease)}% decrease in the last 5 minutes opening SELL position.')
-                        
-                         # prepare the trade request
-
-                         # sell 
-            
-                         # sell(pair, close_, last_trade)
-
-                         fake_sell(pair, available_crypto, close_, last_trade)
+            available_crypto = float(balance['ANT'])
+            available_money = float(balance['USD.HOLD'])
+            if percentage_Decrease >= percentage_stop_loss_equivilant :
+                if available_crypto != 0: 
+                    print(f'Percentage Decrease (1st indication) : {pair[0]+pair[1]}, {percentage_Decrease}%')
+                    time.sleep(4) # Pause for 4 seconds to ensure the decrease is sustained. Isnt just a random fluctuation. But instead, the begining of a downward trend
+                                # We have more leverage in respects to the amount of time we can wait when the trend is going upwards as we will only be gaining profit
+                                # Whereas the longer we leave time to ensure a downward trend, the more we will lose if the trend is in fact going down. 
+                                # The risk associated with this is that if we do sell, and it was only a temporary fluctuation in the price, we would'nt have lost money, 
+                                # but we would have lost a chance to increase our profit. 
                 
-                     else: 
-                         print(f'Difference is only: {str(percentage_Decrease)}% decrease trying again...')
-                         pass 
-                 else: 
-                     pass
-                        
-             elif percentage_Increase > PRICE_THRESHOLD :
-                 available_crypto = float(balance['XXRP'])
-                 available_money = float(balance['USD.HOLD'])
+                    # calculate the difference once again. We do this to ensure the downward trend remains after the 4 second period
+                    data = get_crypto_data(pair[0]+pair[1], since)
 
-                 if available_money != 0: 
-                     print(f'Percentage increase (1st indication) : {pair[0]+pair[1]}, {percentage_Increase}%')
-                     # Pause for 8 seconds to ensure the increase is sustained. Isnt just a random fluctuation. But instead, an upward trend
-                     time.sleep(3)
+                    open_ = float(data[len(data) - 1][1])
+                    close_ = float(data[len(data) - 2][4])
+
+                    percentage_Decrease = (close_ - open_) / (close_ * 100)
+
+                    moving_Average = calcMovingAverage(data)
+
+                    percentage_stop_loss_equivilant = (STOP_LOSS / open_) * 100
+
+                    if percentage_Decrease >= percentage_stop_loss_equivilant:
+                        print(f'Percentage Decrease (2nd Indication): {pair[0]+pair[1]}, {percentage_Decrease}%')
+                        print(f'{pair[0]+pair[1]} is up {str(percentage_Decrease)}% decrease in the last 5 minutes opening SELL position.')
                     
-                     # calculate the difference once again. We do this to ensure the upward trend remains after the 8 second period
-                     data = get_crypto_data(pair[0]+pair[1], since)
+                        # prepare the trade request
 
-                     count = 0
+                        # sell 
 
-                     for prices in data: 
-                         balance = get_fake_balance() 
-                         #balance = get_balance() uncomment when you want to trade with real money 
-                         last_trade = get_last_trade(pair[0]+pair[1])
-                         count += 1
-                         if count == 60:
-                             close_ = float(prices[4])
-                         if count == 60: 
-                             open_ = float(prices[1])
+                        # sell(pair, close_, last_trade)
+                        close_ = float(data[len(data) - 1][4])
 
-                     percentage_Increase = (open_ - close_) / (close_* 100)
 
-                     moving_Average = calcMovingAverage(data)
+                        fake_sell(pair, available_crypto, close_, last_trade)
+            
+                    else: 
+                        print(f'Difference is only: {str(percentage_Decrease)}% decrease trying again...')
+                        pass 
+                else: 
+                    printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
+                    pass
+                    
+            elif percentage_Increase > percentage_threshold_equivilant :
+                available_crypto = float(balance['ANT'])
+                available_money = float(balance['USD.HOLD'])
 
-                     if percentage_Increase > PRICE_THRESHOLD:
-                         print(f'Percentage Increase (2nd Indication): {pair[0]+pair[1]}, {percentage_Increase}%')
-                         print(f'{pair[0]+pair[1]} is up {str(percentage_Increase)}% increase in the last 5 minutes opening BUY position.')
-                         # prepare the trade request
-                         # Buy
-                         # buy(pair[0]+pair[1], available_money, close_, last_trade)
-                         fake_buy(pair, available_money, close_, last_trade)
-                            
-                     else:
-                         print(f'Difference is only: {str(percentage_Increase)}% increase trying again...')
-                         pass 
-                 else: 
-                     pass 
-             else:
-                 print("Current open price: ", open_)
-                 print("Current closing price: ", close_)
-                 print("Moving average: ", moving_Average)
-                 print("If negative, means a decrease; if postive, means an increase in the price since the last sale")
-                 print(f'Difference is only: {str(percentage_Increase)}% increase trying again...')
-                 print(f'Difference is only: {str(percentage_Decrease)}% decrease trying again...')
-                 pass    
+                if available_money != 0: 
+                    print(f'Percentage increase (1st indication) : {pair[0]+pair[1]}, {percentage_Increase}%')
+                    # Pause for 8 seconds to ensure the increase is sustained. Isnt just a random fluctuation. But instead, an upward trend
+                    time.sleep(3)
+                
+                    # calculate the difference once again. We do this to ensure the upward trend remains after the 8 second period
+                    data = get_crypto_data(pair[0]+pair[1], since)
+
+                    open_ = float(data[len(data) - 1][1])
+                    close_ = float(data[len(data) - 2][4])
+
+                    percentage_Increase = (open_ - close_) / (close_* 100)
+
+                    moving_Average = calcMovingAverage(data)
+
+                    percentage_threshold_equivilant = (PRICE_THRESHOLD / open_) * 100
+
+                    if percentage_Increase > percentage_threshold_equivilant:
+                        print(f'Percentage Increase (2nd Indication): {pair[0]+pair[1]}, {percentage_Increase}%')
+                        print(f'{pair[0]+pair[1]} is up {str(percentage_Increase)}% increase in the last 5 minutes opening BUY position.')
+                        # prepare the trade request
+                        # Buy
+                        # buy(pair[0]+pair[1], available_money, close_, last_trade)
+
+                        close_ = float(data[len(data) - 1][4])
+
+                        fake_buy(pair, available_money, close_, last_trade)
+                        
+                    else:
+                        print(f'Difference is only: {str(percentage_Increase)}% increase trying again...')
+                        pass 
+                else: 
+                    printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
+                    pass 
+            else:
+                printCurrentState(open_, close_, moving_Average, percentage_Increase, percentage_Decrease, available_crypto, available_money, pair)
+                pass    
         else:
+            print("Price is eqaul to moving average")
             pass # This is in the very unlikely case where the price is exactly equal to the moving average
 
     else: 
         print("Do not have enough funds to make a trade") 
         pass 
+
+
+    
+   
     
    
 #def buy(pair, currency_type_amount, close_, last_trade): 
@@ -399,14 +381,13 @@ if __name__ == '__main__':
     api = krakenex.API() # instatiation of krakenex library/connects to the kraken API 
     api.load_key('kraken.key') # The loadkey function allows us to load our API keys and access the data specific to the account made on kraken
                                # Here, we input the .KEY file as a parameter within the load_key function that stores both the API KEY and private key 
-    pair = ("XXRP", "ZUSD") # Currency pair
+    pair = ("ANT", "USD") # Currency pair
     since = str(int(time.time() -  3600)) # Requires edit, uses 3600 seconds which is equivilant to an hour whereas I want to know the buy sell operations from the past day 
     
-    count = 0
     loop_cycle = 1
     
     while True: 
-        analyze(pair, since, count, loop_cycle)
+        analyze(pair, since, loop_cycle)
         loop_cycle += 1 
         time.sleep(1) # Anything faster than this will cause the API to produce Key Error: 'result' to prevent DDOS attack/manipulation of the direction in the market. 
         if loop_cycle == 9: # First rate limit will be reached when loop hits 9th gathering of trades history (OHLC), 
@@ -418,7 +399,6 @@ if __name__ == '__main__':
                            # thus on the 9th request of OHLC data, we go above our counter limit and hit 18 points). 15 points/-0.33 == 54.54 seconds thus, 
                            # I have rounded to 46 seconds as the countdown function uses the divmod() function which requires a whole number of seconds/minutes. 
                            # Divide the remaining no. of points by 0.33 to get no.of seconds you have to wait to set rate limit back to 0. 
-            count = 0
             loop_cycle = 1
             
     
